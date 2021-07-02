@@ -1,6 +1,6 @@
 import os
 # noinspection PyUnresolvedReferences
-from icecream import ic
+#from icecream import ic
 from sqlalchemy import ForeignKey
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy import create_engine, MetaData, Table, Column, String
