@@ -1,8 +1,8 @@
 from setuptools import setup
 
 install_requires=[
-   sqlalchemy,
-   sqlalchemy_utils
+   'sqlalchemy',
+   'sqlalchemy_utils'
 ]
 
 setup(
