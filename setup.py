@@ -1,6 +1,9 @@
 from setuptools import setup
-import sqlalchemy
-import sqlalchemy_utils
+
+install_requires=[
+   sqlalchemy,
+   sqlalchemy_utils
+]
 
 setup(
     name='traversey',
