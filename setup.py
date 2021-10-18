@@ -1,4 +1,6 @@
 from setuptools import setup
+import sqlalchemy
+import sqlalchemy_utils
 
 setup(
     name='traversey',
