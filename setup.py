@@ -9,7 +9,7 @@ setup(
     install_requires=[
         'sqlalchemy',
         'sqlalchemy_utils'
-    ]
+    ],
     url='',
     license='',
     author='',
