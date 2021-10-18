@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='traversery',
+    name='traversey',
     version='1.0',
     packages=[''],
     url='',
