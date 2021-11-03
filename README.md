@@ -6,5 +6,4 @@ import traversey
 
 dir = "C:\\Users\\User\\Downloads"
 td = traversey.traverse(dir, 'database.db')
-td.scan()
 ```
