@@ -7,8 +7,7 @@ setup(
     version='1.0',
     packages=[''],
     install_requires=[
-        'sqlalchemy',
-        'sqlalchemy_utils'
+        'sqlite3'
     ],
     url='',
     license='',
