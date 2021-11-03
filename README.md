@@ -1,1 +1,7 @@
-A work in progress library for traversing a given directory and creating a database of files and folders with their properties. Two tables are created, `files` and `dirs`. Due to limitations with sqlite, most of the columns have to be strings, otherwise you might get this error: "Python int too large to convert to SQLite INTEGER" 
+A library for traversing a given directory and creating a database of files and folders with their properties. Two tables are created, `files` and `dirs`.
+Usage:
+`import traversey
+
+dir = "C:\\Users\\User\\Downloads"
+td = traversey.traverse(dir, 'database.db')
+td.scan()
