@@ -4,4 +4,4 @@ Usage:
 
 dir = "C:\\Users\\User\\Downloads"
 td = traversey.traverse(dir, 'database.db')
-td.scan()
+td.scan()`
