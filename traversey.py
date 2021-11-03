@@ -1,88 +1,75 @@
 import os
-# noinspection PyUnresolvedReferences
-#from icecream import ic
-from sqlalchemy import ForeignKey
-from sqlalchemy_utils import database_exists, create_database
-from sqlalchemy import create_engine, MetaData, Table, Column, String
-
+import sqlite3
+from sqlite3 import Error
 
 class Traversey:
     def __init__(self, rootdir, db):
-        engine = create_engine(f'sqlite:///{db}')
-        self.metadata = MetaData(engine)
-        self.metadata.reflect()
         self.rootdir = rootdir
-        # Create database if it does not exist.
-        if not database_exists(engine.url):
-            create_database(engine.url)
-            # Create a metadata instance
-            # Declare a table
-            Table('dirs', self.metadata,
-                  Column('DirID', String),
-                  # If not string then you might get "Python int too large to convert to SQLite INTEGER"
-                  Column('DirName', String, primary_key=True),
-                  Column('ParentDirID', String, ForeignKey('dirs.DirID')),
-                  Column('ParentDir', String, primary_key=True),
-                  Column('st_ctime', String),
-                  Column('st_atime', String),
-                  Column('st_mtime', String),
-                  Column('st_ctime_ns', String),
-                  Column('st_atime_ns', String),
-                  Column('st_mtime_ns', String),
-                  Column('st_nlink', String))
+        sql_create_dirs_table = """CREATE TABLE IF NOT EXISTS dirs (
+                                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                            DirID integer,
+                                            DirName text NOT NULL,
+                                            ParentDirID integer,
+                                            ParentDir text NOT NULL ,
+                                            st_ctime integer NOT NULL,
+                                            st_atime integer NOT NULL,
+                                            st_mtime integer NOT NULL,
+                                            st_ctime_ns integer,
+                                            st_atime_ns integer,
+                                            st_mtime_ns integer,
+                                            st_nlink integer,
+                                            FOREIGN KEY("id") REFERENCES dirs("id")
+                                        );"""
+        sql_create_files_table = """ CREATE TABLE IF NOT EXISTS files (
+                                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                FileID integer,
+                                                FileName text NOT NULL,
+                                                ParentDirID integer,
+                                                FilePath text NOT NULL,
+                                                st_size integer,
+                                                st_mode integer,
+                                                st_uid integer,
+                                                st_gid integer,
+                                                st_ino integer,
+                                                st_ctime integer,
+                                                st_atime integer,
+                                                st_mtime integer,
+                                                st_ctime_ns integer,
+                                                st_atime_ns integer,
+                                                st_mtime_ns integer,
+                                                st_nlink integer,
+                                                FOREIGN KEY("id") REFERENCES dirs("id")
+                                            ); """
 
-            Table('files', self.metadata,
-                  Column('FileID', String),
-                  Column('FileName', String, primary_key=True),
-                  Column('ParentDirID', String, ForeignKey('dirs.DirID')),
-                  Column('FilePath', String, primary_key=True),
-                  Column('st_size', String),
-                  # Size of the file in bytes, if it is a regular file or a symbolic link.
-                  # The size of a symbolic link is the length of the pathname it contains,
-                  # without a terminating null byte.
-                  Column('st_mode', String),  # File mode: file type and file mode bits (permissions).
-                  Column('st_uid', String),  # User identifier of the file owner.
-                  Column('st_gid', String),  # Group identifier of the file owner.
-                  Column('st_ino', String),
-                  # Platform dependent, but if non-zero, uniquely identifies the file for a given value of st_dev.
-                  Column('st_ctime', String),
-                  # Platform dependent: the time of most recent metadata change on Unix,
-                  # the time of creation on Windows, expressed in seconds.
-                  Column('st_atime', String),  # Time of most recent access expressed in seconds.
-                  Column('st_mtime', String),
-                  # Time of most recent content modification expressed in seconds.
-                  Column('st_ctime_ns', String),
-                  # Platform dependent: the time of most recent metadata change on Unix,
-                  # the time of creation on Windows, expressed in nanoseconds as an integer.
-                  Column('st_atime_ns', String),
-                  # Time of most recent access expressed in nanoseconds as an integer.
-                  Column('st_mtime_ns', String),
-                  # Time of most recent content modification expressed in nanoseconds as an integer.
-                  Column('st_nlink', String))
+        # create a database connection
+        self.conn = create_connection(db)
 
-            # Create all tables
-            self.metadata.create_all()
-        try:
-            self.connection = engine.connect()
-        except:
-            print("error accessing database")
-        self.metadata.reflect(bind=engine)
-        stmt = self.metadata.tables['dirs'].insert().values(DirID=1,
-                                                            DirName=rootdir,
-                                                            ParentDir="",
-                                                            ParentDirID=None)
-        # probably a more efficient way to do this. seems too expensive.
-        try:
-            self.connection.execute(stmt)
-        except:
-            pass
+        # create tables
+        if self.conn is not None:
+            # create projects table
+            try:
+                c = self.conn.cursor()
+                c.execute(sql_create_files_table)
+            except Error as e:
+                print(e)
+
+            # create tasks table
+            try:
+                c = self.conn.cursor()
+                c.execute(sql_create_dirs_table)
+            except Error as e:
+                print(e)
+
+        else:
+            print("Error! cannot create the database connection.")
+
 
     def scan(self):
         adddirs = []
         addfiles = []
         i = 1
         j = 0
-        print(f"Scanning for files and folders...")
+        print(f"Scanning {self.rootdir} for files and folders...")
         for folder, subfolders, files in os.walk(self.rootdir, topdown=True):
             print(f'\r{i} folders and {j} files found.', end='')
             for subfolder in subfolders:
@@ -106,31 +93,49 @@ class Traversey:
             print('\r', str(round((i / length) * 100, 2)) + '%', end='')
             i = i + 1
         print("\r100%\r\nComplete.")
+        self.conn.commit()
 
     def _addFile(self, folder, file, verbose=False):
         path = os.path.join(folder, file)
         parent_dir_id = os.stat(folder).st_ino
         stat = os.stat(path)
-        stmt = self.metadata.tables['files'].insert().values(FileID=str(stat.st_ino),
-                                                             FileName=file,
-                                                             FilePath=folder,
-                                                             ParentDirID=str(parent_dir_id),
-                                                             st_size=str(stat.st_size),
-                                                             st_mode=str(stat.st_mode),
-                                                             st_uid=str(stat.st_uid),
-                                                             st_gid=str(stat.st_gid),
-                                                             st_ino=str(stat.st_ino),
-                                                             st_ctime=str(stat.st_ctime),
-                                                             st_atime=str(stat.st_atime),
-                                                             st_mtime=str(stat.st_mtime),
-                                                             st_ctime_ns=str(stat.st_ctime_ns),
-                                                             st_atime_ns=str(stat.st_atime_ns),
-                                                             st_mtime_ns=str(stat.st_mtime_ns),
-                                                             st_nlink=str(stat.st_nlink))
+        stmt = """INSERT INTO files (FileID,
+                                      FileName,
+                                      FilePath,
+                                      ParentDirID,
+                                      st_size,
+                                      st_mode,
+                                      st_uid,
+                                      st_gid,
+                                      st_ino,
+                                      st_ctime,
+                                      st_atime,
+                                      st_mtime,
+                                      st_ctime_ns,
+                                      st_atime_ns,
+                                      st_mtime_ns,
+                                      st_nlink)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""";
+        data_tuple = (stat.st_ino,
+                            file,
+                            folder,
+                            parent_dir_id,
+                            stat.st_size,
+                            stat.st_mode,
+                            stat.st_uid,
+                            stat.st_gid,
+                            stat.st_ino,
+                            stat.st_ctime,
+                            stat.st_atime,
+                            stat.st_mtime,
+                            stat.st_ctime_ns,
+                            stat.st_atime_ns,
+                            stat.st_mtime_ns,
+                            stat.st_nlink)
         try:
             if verbose:
                 print(stmt)
-            self.connection.execute(stmt)
+            db_query(self.conn, stmt, data_tuple)
         except Exception as e:
             print(e)
         return
@@ -139,23 +144,59 @@ class Traversey:
         path = os.path.join(folder, subfolder)
         stat = os.stat(path)
         parent_dir_id = os.stat(folder).st_ino
-        stmt = self.metadata.tables['dirs'].insert().values(DirID=str(stat.st_ino),
-                                                            DirName=subfolder,
-                                                            ParentDirID=str(parent_dir_id),
-                                                            ParentDir=folder,
-                                                            st_ctime=str(stat.st_ctime),
-                                                            st_atime=str(stat.st_atime),
-                                                            st_mtime=str(stat.st_mtime),
-                                                            st_ctime_ns=str(stat.st_ctime_ns),
-                                                            st_atime_ns=str(stat.st_atime_ns),
-                                                            st_mtime_ns=str(stat.st_mtime_ns))
+        stmt = """INSERT INTO dirs (DirID,
+                                    DirName,
+                                    ParentDirID,
+                                    ParentDir,
+                                    st_ctime,
+                                    st_atime,
+                                    st_mtime,
+                                    st_ctime_ns,
+                                    st_atime_ns,
+                                    st_mtime_ns)
+                            VALUES (?,?,?,?,?,?,?,?,?,?);"""
+        data_tuple = (stat.st_ino,
+                      subfolder,
+                      parent_dir_id,
+                      folder,
+                      stat.st_ctime,
+                      stat.st_atime,
+                      stat.st_mtime,
+                      stat.st_ctime_ns,
+                      stat.st_atime_ns,
+                      stat.st_mtime_ns)
         try:
             if verbose:
                 print(stmt)
-            self.connection.execute(stmt)
+            self.conn.execute(stmt, data_tuple)
         except Exception as e:
             print(e)
         return
 
-    def update(self, verbose=False):
-        return
+
+def create_connection(db_file):
+    """ create a database connection to the SQLite database
+        specified by db_file
+    :param db_file: database file
+    :return: Connection object or None
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(db_file)
+        return conn
+    except Error as e:
+        print(e)
+
+    return conn
+
+def db_query(conn, statement, data_tuple):
+    """ create a table from the create_table_sql statement
+    :param conn: Connection object
+    :param create_table_sql: a CREATE TABLE statement
+    :return:
+    """
+    try:
+        c = conn.cursor()
+        c.execute(statement, data_tuple)
+    except Error as e:
+        print(e)
