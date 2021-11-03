@@ -1,4 +1,0 @@
-sqlalchemy
-sqlalchemy_utils
-
-setuptools
