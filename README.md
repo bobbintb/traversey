@@ -4,8 +4,11 @@ Usage:
 ```
 import traversey
 
-dir = "C:\\Users\\User\\Downloads"
-td = traversey.traverse(dir, 'database.db')
+dir = r"C:\Users\User\Downloads"
+td = traversey.traverse('database.db', rootdir=dir)
 ```
 
-Due to limitations with sqlite and its ability to handle large integers, most of the schema is textual and not numerical. For example, if you query an item to get the creation time, it will be a string. Although that string will be numbers, it will programatically need to be converted to an int in Python to be treated as such. SQLite also does not have a date/time type. 
+You can also add columns:
+```
+td.addColumn(table="files", column="partialHash")
+```
