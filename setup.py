@@ -7,7 +7,7 @@ setup(
     version='1.0',
     packages=[''],
     install_requires=[
-        'sqlite3'
+        'pysqlite3'
     ],
     url='',
     license='',
