@@ -5,10 +5,6 @@ Usage:
 import traversey
 
 dir = r"C:\Users\User\Downloads"
-td = traversey.traverse('database.db', rootdir=dir)
-```
-
-You can also add columns:
-```
-td.addColumn(table="files", column="partialHash")
+td = traversey.traverse('database.db')
+td.traverse(dir)
 ```
