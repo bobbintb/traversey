@@ -80,8 +80,8 @@ class db:
             for file in files:
                 addfiles.append([folder, file])
                 y=y+1
-            print("Directories found: " + "{:,}".format(x + 1) + "\nFiles found: " + "{:,}".format(y + 1), end="\033[F")
-        print("")
+            print("Directories found: " + "{:,}".format(x + 1), end='\r')
+            print("Files found: " + "{:,}".format(y + 1), end='\r')
         print("")
         for i, directory in enumerate(adddirs):
             try:
