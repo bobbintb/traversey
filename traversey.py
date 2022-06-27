@@ -2,7 +2,8 @@ import os
 import sqlite3
 from sqlite3 import Error
 import platform
-
+import subprocess
+import time
 # TODO: try catch for file not found or cannot read.
 # TODO: make case sensitive because of linux.
 
@@ -21,21 +22,21 @@ class db:
 
     def traverse(self, rootdir):
         build = {}
-        build["sql_create_dirs_table"] = """CREATE TABLE dirs (DirID, 
-                                                      DirName NOT NULL, 
-                                                      ParentDirID INTEGER,
-                                                      st_ctime_ns INTEGER NOT NULL,
-                                                      st_atime_ns INTEGER NOT NULL,
-                                                      st_mtime_ns INTEGER NOT NULL,
+        build["sql_create_dirs_table"] = """CREATE TABLE dirs (DirID BLOB, 
+                                                      DirName TEXT NOT NULL, 
+                                                      ParentDirID BLOB,
+                                                      st_ctime_ns BLOB NOT NULL,
+                                                      st_atime_ns BLOB NOT NULL,
+                                                      st_mtime_ns BLOB NOT NULL,
                                                       PRIMARY KEY("DirID"));"""
-        build["sql_create_files_table"] = f"""CREATE TABLE files (FileID NOT NULL,
-                                                        FileName NOT NULL,
-                                                        ParentDirID INTEGER NOT NULL,
-                                                        st_size INTEGER NOT NULL,
-                                                        st_ctime_ns INTEGER NOT NULL,
-                                                        st_atime_ns INTEGER NOT NULL,
-                                                        st_mtime_ns INTEGER NOT NULL,
-                                                        st_nlink INTEGER NOT NULL,
+        build["sql_create_files_table"] = f"""CREATE TABLE files (FileID BLOB NOT NULL,
+                                                        FileName TEXT NOT NULL,
+                                                        ParentDirID BLOB NOT NULL,
+                                                        st_size BLOB NOT NULL,
+                                                        st_ctime_ns BLOB NOT NULL,
+                                                        st_atime_ns BLOB NOT NULL,
+                                                        st_mtime_ns BLOB NOT NULL,
+                                                        st_nlink BLOB NOT NULL,
                                                         FOREIGN KEY("ParentDirID") REFERENCES "dirs"("DirID"),
                                                         PRIMARY KEY("FileName","ParentDirID")); """
         build["sql_create_filedata_view"] = f"""CREATE VIEW filedata as
@@ -82,7 +83,7 @@ class db:
                 y=y+1
             print("Directories found: " + "{:,}".format(x + 1), end='\r')
             print("Files found: " + "{:,}".format(y + 1), end='\r')
-        print("")
+            
         for i, directory in enumerate(adddirs):
             try:
                 db._addDir(self, directory[0], directory[1])
@@ -126,13 +127,18 @@ class db:
                             VALUES (?,?,?,?,?,?,?,?);"""
         data_tuple = (str(stat.st_ino),
                           file,
-                          parent_dir_id,
-                          stat.st_size,
-                          stat.st_ctime_ns,
-                          stat.st_atime_ns,
-                          stat.st_mtime_ns,
-                          stat.st_nlink)
-        self.conn.execute(stmt, data_tuple)
+                          str(parent_dir_id),
+                          str(stat.st_size),
+                          str(stat.st_ctime_ns),
+                          str(stat.st_atime_ns),
+                          str(stat.st_mtime_ns),
+                          str(stat.st_nlink))
+        try:
+            self.conn.execute(stmt, data_tuple)
+        except Error as e:
+            print(e)
+            print(stmt)
+            print(data_tuple)
         return
 
     def _addDir(self, folder, subfolder):
