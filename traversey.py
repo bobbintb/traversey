@@ -4,6 +4,8 @@ from sqlite3 import Error
 import platform
 import subprocess
 import time
+import textwrap
+import shutil
 # TODO: try catch for file not found or cannot read.
 # TODO: make case sensitive because of linux.
 
@@ -72,29 +74,36 @@ class db:
     def _scan(self, rootdir):
         adddirs = [[rootdir, rootdir]]
         addfiles = []
-        x=0
-        y=0
+        width=shutil.get_terminal_size().columns
+        x = 1 # Because we need to include the root directory
+        y = 0
         for folder, subfolders, files in os.walk(rootdir, topdown=True):
             for subfolder in subfolders:
                 adddirs.append([folder, subfolder])
-                x=x+1
+                x += 1
             for file in files:
                 addfiles.append([folder, file])
-                y=y+1
-            print("Directories found: " + "{:,}".format(x + 1), end='\r')
-            print("Files found: " + "{:,}".format(y + 1), end='\r')
-            
+                y += 1
+            print("\033[33m","Directories found:\033[0m " + "{:,}".format(x))
+            print("\033[33m","Files found:\033[0m " + "{:,}".format(y), end='\033[F')
+        print("\n")
+        formatted_adddirs = str("{:,}".format(len(adddirs)))
+        formatted_addfiles = str("{:,}".format(len(addfiles)))
         for i, directory in enumerate(adddirs):
             try:
                 db._addDir(self, directory[0], directory[1])
-                print("Adding directory", str("{:,}".format(i + 1)) + "/" + str("{:,}".format(len(adddirs))), end="\r")
+                print("\033[32m","Adding directory", str("{:,}".format(i + 1)) + "/" + formatted_adddirs + ': ', end='\033[0m')
+                msg = textwrap.shorten(os.path.join(directory[0], directory[1]),width=width-23-len(str("{:,}".format(i+1)))-len(str(formatted_adddirs)), placeholder="...")
+                print(msg, end='\033[K\r', flush=True)
             except Error as e:
                 print(e)
         print("")
         for j, file in enumerate(addfiles):
             try:
                 db._addFile(self, file[0], file[1])
-                print("Adding file", str("{:,}".format(j + 1)) + "/" + str("{:,}".format(len(addfiles))), end="\r")
+                print("\033[32m","Adding file", str("{:,}".format(j + 1)) + "/" + formatted_addfiles + ': ', end='\033[0m')
+                msg = textwrap.shorten(os.path.join(file[0], file[1]),width=width-18-len(str("{:,}".format(j+1)))-len(str(formatted_addfiles)), placeholder="...")
+                print(msg, end='\033[K\r', flush=True)
             except Error as e:
                 print(e)
         print("")
